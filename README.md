@@ -1,3 +1,4 @@
+# Group 9 Project Proposal: Map-based Customer Relationship Management (CRM) for Business-to-Business Salespeople
 Project by: Raghav Sharma, Roman Nekrasov, Shradha Shankar
 
 ## Project Description
@@ -13,3 +14,6 @@ The audience wants to use this application because it provides a clear and intui
 ### Why do you as developers want to build this application?
 
 We want to build this application because it provides a strong opportunity to design and implement a complete server-side system with realistic constraints. One of our members has worked in sales and wishes software like this existed. The project allows us to work with user authentication, role-based authorization, relational data modeling, and persistent storage while keeping the user interface intentionally simple. By focusing on accounts, users, permissions, and structured data relationships, we can demonstrate a solid understanding of server-side development concepts and how they support real-world applications.
+
+## Technical Description
+
