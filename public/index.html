@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>RoMap MVP</title>
+  <style>
+    #map {
+      height: 100vh;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+
+<script>
+    let map;
+    let tempMarker = null;
+
+    async function initMap() {
+    map = new google.maps.Map(document.getElementById("map"), {
+        center: { lat: 47.61, lng: -122.33 },
+        zoom: 12
+    });
+
+    await loadLeads();
+
+    map.addListener("click", (e) => {
+        showLeadForm(e.latLng);
+    });
+    }
+
+    async function loadLeads() {
+    const res = await fetch("/api/leads");
+    const leads = await res.json();
+
+    leads.forEach(lead => {
+        new google.maps.Marker({
+        position: { lat: lead.latitude, lng: lead.longitude },
+        map,
+        title: lead.title
+        });
+    });
+    }
+
+    function showLeadForm(latLng) {
+    if (tempMarker) tempMarker.setMap(null);
+
+    tempMarker = new google.maps.Marker({
+        position: latLng,
+        map
+    });
+
+    const formHtml = `
+        <div>
+        <input id="leadTitle" placeholder="Lead Name" /><br/>
+        <textarea id="leadNotes" placeholder="Notes"></textarea><br/>
+        <select id="leadStatus">
+            <option value="new">New</option>
+            <option value="visited">Visited</option>
+            <option value="follow_up">Follow Up</option>
+        </select><br/>
+        <button onclick="saveLead(${latLng.lat()}, ${latLng.lng()})">Save</button>
+        </div>
+    `;
+
+    const infoWindow = new google.maps.InfoWindow({
+        content: formHtml
+    });
+
+    infoWindow.open(map, tempMarker);
+    }
+
+    async function saveLead(lat, lng) {
+    const title = document.getElementById("leadTitle").value;
+    const notes = document.getElementById("leadNotes").value;
+    const status = document.getElementById("leadStatus").value;
+
+    const res = await fetch("/api/leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+        title,
+        notes,
+        status,
+        latitude: lat,
+        longitude: lng
+        })
+    });
+
+    const lead = await res.json();
+
+    new google.maps.Marker({
+        position: { lat: lead.latitude, lng: lead.longitude },
+        map,
+        title: lead.title
+    });
+
+    tempMarker.setMap(null);
+    }
+</script>
+
+  <script
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAHL7a_yVvv72sZmSzPaoSzWv06T6SqoC8&callback=initMap"
+    async
+    defer>
+  </script>
+</body>
+</html>
