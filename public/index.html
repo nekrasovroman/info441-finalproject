@@ -15,12 +15,33 @@
 <script>
     let map;
     let tempMarker = null;
+    let infoWindow;
+
+    // Map status → Google default pin colors
+    function getMarkerIcon(status) {
+    const base = "http://maps.google.com/mapfiles/ms/icons/";
+
+    const statusColors = {
+        "New": "blue-dot.png",
+        "Attempted": "yellow-dot.png",
+        "Connected": "orange-dot.png",
+        "Active": "green-dot.png",
+        "Bad Timing": "purple-dot.png",
+        "Unqualified": "ltblue-dot.png",
+        "Disqualified": "red-dot.png",
+        "Client": "green-dot.png"
+    };
+
+    return base + (statusColors[status] || "blue-dot.png");
+    }
 
     async function initMap() {
     map = new google.maps.Map(document.getElementById("map"), {
         center: { lat: 47.61, lng: -122.33 },
         zoom: 12
     });
+
+    infoWindow = new google.maps.InfoWindow();
 
     await loadLeads();
 
@@ -33,12 +54,28 @@
     const res = await fetch("/api/leads");
     const leads = await res.json();
 
-    leads.forEach(lead => {
-        new google.maps.Marker({
+    leads.forEach(addLeadMarker);
+    }
+
+    function addLeadMarker(lead) {
+    const marker = new google.maps.Marker({
         position: { lat: lead.latitude, lng: lead.longitude },
         map,
-        title: lead.title
-        });
+        title: lead.title,
+        icon: getMarkerIcon(lead.status)
+    });
+
+    marker.addListener("click", () => {
+        const content = `
+        <div>
+            <h3>${lead.title}</h3>
+            <p><strong>Status:</strong> ${lead.status}</p>
+            <p>${lead.notes || ""}</p>
+        </div>
+        `;
+
+        infoWindow.setContent(content);
+        infoWindow.open(map, marker);
     });
     }
 
@@ -55,19 +92,24 @@
         <input id="leadTitle" placeholder="Lead Name" /><br/>
         <textarea id="leadNotes" placeholder="Notes"></textarea><br/>
         <select id="leadStatus">
-            <option value="new">New</option>
-            <option value="visited">Visited</option>
-            <option value="follow_up">Follow Up</option>
+            <option value="New">New</option>
+            <option value="Attempted">Attempted</option>
+            <option value="Connected">Connected</option>
+            <option value="Active">Active</option>
+            <option value="Bad Timing">Bad Timing</option>
+            <option value="Unqualified">Unqualified</option>
+            <option value="Disqualified">Disqualified</option>
+            <option value="Client">Client</option>
         </select><br/>
         <button onclick="saveLead(${latLng.lat()}, ${latLng.lng()})">Save</button>
         </div>
     `;
 
-    const infoWindow = new google.maps.InfoWindow({
+    const formWindow = new google.maps.InfoWindow({
         content: formHtml
     });
 
-    infoWindow.open(map, tempMarker);
+    formWindow.open(map, tempMarker);
     }
 
     async function saveLead(lat, lng) {
@@ -89,11 +131,7 @@
 
     const lead = await res.json();
 
-    new google.maps.Marker({
-        position: { lat: lead.latitude, lng: lead.longitude },
-        map,
-        title: lead.title
-    });
+    addLeadMarker(lead);
 
     tempMarker.setMap(null);
     }
