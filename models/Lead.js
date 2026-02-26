@@ -4,7 +4,7 @@ const leadSchema = new mongoose.Schema(
   {
     title: { type: String, required: true },
     notes: { type: String, default: "" },
-    status: { type: String, default: "new" },
+    status: { type: String, default: "New" },
     latitude: { type: Number, required: true },
     longitude: { type: Number, required: true }
   },
