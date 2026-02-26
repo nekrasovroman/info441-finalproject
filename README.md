@@ -20,10 +20,13 @@ We want to build this application because it provides a strong opportunity to de
 
 
 ### Architectural Diagram
+<img width="5369" height="772" alt="diagram" src="https://github.com/user-attachments/assets/a133ad5b-6979-406c-a6e4-e1d066041ea2" />
+
 
 
 
 ### Data Flow
+<img width="1536" height="1024" alt="Image" src="https://github.com/user-attachments/assets/cf4f7590-5c8d-4fa1-b51e-a0cc0563c413" />
 
 
 
