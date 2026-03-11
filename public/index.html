@@ -1,97 +1,1725 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>RoMap MVP</title>
   <style>
-    #map {
+    :root {
+      --bg: #f3f4f6;
+      --panel: rgba(255, 255, 255, 0.94);
+      --text: #121826;
+      --muted: #667085;
+      --line: #d8dde6;
+      --shadow: 0 18px 40px rgba(15, 23, 42, 0.16);
+      --blue: #3b82f6;
+      --blue-soft: #dbe7ff;
+      --green: #16a34a;
+      --green-soft: #d9f4e4;
+      --purple: #9333ea;
+      --purple-soft: #f0e3ff;
+      --red: #ef4444;
+      --amber: #f59e0b;
+      --teal: #14b8a6;
+      --gray: #6b7280;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      height: 100%;
+      font-family: "SF Pro Display", "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    .app-shell {
+      position: relative;
       height: 100vh;
+      overflow: hidden;
+      background: linear-gradient(180deg, #eef2f7 0%, #f7f8fb 100%);
+    }
+
+    .app-shell.hidden {
+      display: none;
+    }
+
+    .auth-shell {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: linear-gradient(180deg, #f8fafc 0%, #e8eef8 100%);
+    }
+
+    .auth-shell.hidden {
+      display: none;
+    }
+
+    .auth-card {
+      width: min(100%, 420px);
+      padding: 28px;
+      border-radius: 28px;
+      background: rgba(255, 255, 255, 0.96);
+      box-shadow: 0 24px 50px rgba(15, 23, 42, 0.12);
+    }
+
+    .auth-card h1 {
+      margin: 0 0 8px;
+      font-size: 2rem;
+      letter-spacing: -0.04em;
+    }
+
+    .auth-card p {
+      margin: 0 0 22px;
+      color: var(--muted);
+    }
+
+    .auth-form {
+      display: grid;
+      gap: 14px;
+    }
+
+    .auth-form label {
+      display: grid;
+      gap: 6px;
+      font-weight: 600;
+      color: #344054;
+    }
+
+    .auth-form input,
+    .auth-form select {
       width: 100%;
+      padding: 13px 14px;
+      border: 1px solid #d0d5dd;
+      border-radius: 16px;
+    }
+
+    .auth-actions {
+      display: grid;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .auth-actions button {
+      padding: 14px 16px;
+      border: 0;
+      border-radius: 16px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .auth-actions .primary {
+      background: #2563eb;
+      color: white;
+    }
+
+    .auth-actions .secondary {
+      background: #eaecf0;
+      color: #344054;
+    }
+
+    .auth-error {
+      min-height: 20px;
+      margin-top: 12px;
+      color: #b42318;
+      font-size: 0.95rem;
+    }
+
+    .topbar {
+      position: absolute;
+      top: 14px;
+      left: 16px;
+      right: 16px;
+      z-index: 6;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      pointer-events: none;
+    }
+
+    .topbar-chip,
+    .logout-button {
+      pointer-events: auto;
+      border: 0;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.94);
+      box-shadow: var(--shadow);
+    }
+
+    .topbar-chip {
+      padding: 10px 14px;
+      color: #344054;
+      font-weight: 600;
+    }
+
+    .logout-button {
+      padding: 10px 14px;
+      cursor: pointer;
+      color: #344054;
+      font-weight: 700;
+    }
+
+    .screen {
+      position: absolute;
+      inset: 0 0 92px;
+      display: none;
+    }
+
+    .screen.active {
+      display: block;
+    }
+
+    #map {
+      height: 100%;
+      width: 100%;
+    }
+
+    .floating-button {
+      position: absolute;
+      z-index: 5;
+      top: 18px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 18px;
+      border: 0;
+      border-radius: 20px;
+      background: var(--panel);
+      color: #344054;
+      box-shadow: var(--shadow);
+      cursor: pointer;
+    }
+
+    .floating-button svg {
+      width: 22px;
+      height: 22px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+    }
+
+    .preview-button {
+      left: 16px;
+    }
+
+    .filter-button {
+      right: 16px;
+      width: 66px;
+      height: 66px;
+      justify-content: center;
+      border-radius: 50%;
+      padding: 0;
+    }
+
+    .tasks-screen {
+      padding: 24px 24px 0;
+      overflow-y: auto;
+      background: linear-gradient(180deg, #fbfcfe 0%, #f1f4f9 100%);
+    }
+
+    .users-screen {
+      padding: 24px 24px 110px;
+      overflow-y: auto;
+      background: linear-gradient(180deg, #fbfcfe 0%, #f1f4f9 100%);
+    }
+
+    .section-title {
+      margin: 0;
+      font-size: 1.9rem;
+      font-weight: 700;
+      letter-spacing: -0.04em;
+    }
+
+    .section-subtitle {
+      margin: 8px 0 28px;
+      color: var(--muted);
+      font-size: 1rem;
+    }
+
+    .task-list {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      padding-bottom: 24px;
+    }
+
+    .task-card {
+      display: grid;
+      grid-template-columns: 74px 1fr;
+      gap: 18px;
+      align-items: start;
+      padding: 24px;
+      border-radius: 26px;
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid rgba(215, 220, 228, 0.95);
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+      cursor: pointer;
+    }
+
+    .task-card.overdue {
+      border-color: rgba(248, 163, 163, 0.95);
+    }
+
+    .task-icon {
+      width: 74px;
+      height: 74px;
+      display: grid;
+      place-items: center;
+      border-radius: 22px;
+      font-size: 2rem;
+    }
+
+    .task-icon.call {
+      background: var(--blue-soft);
+      color: #2563eb;
+    }
+
+    .task-icon.visit,
+    .task-icon.meeting {
+      background: var(--green-soft);
+      color: var(--green);
+    }
+
+    .task-icon.email {
+      background: var(--purple-soft);
+      color: var(--purple);
+    }
+
+    .task-card h3 {
+      margin: 4px 0 8px;
+      font-size: 2rem;
+      font-weight: 600;
+      letter-spacing: -0.03em;
+    }
+
+    .task-type {
+      margin: 0 0 18px;
+      color: #475467;
+      font-size: 1.05rem;
+    }
+
+    .task-due {
+      margin: 0;
+      color: #667085;
+      font-size: 0.98rem;
+    }
+
+    .task-due.overdue {
+      color: #ff0000;
+    }
+
+    .task-status-select,
+    .mini-task-status {
+      margin-top: 12px;
+      padding: 10px 12px;
+      border: 1px solid #d0d5dd;
+      border-radius: 12px;
+      background: white;
+      color: #344054;
+    }
+
+    .bottom-nav {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 7;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      align-items: center;
+      padding: 14px 16px 18px;
+      background: rgba(252, 252, 253, 0.96);
+      border-top: 1px solid rgba(210, 214, 220, 0.95);
+      backdrop-filter: blur(16px);
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      border: 0;
+      background: transparent;
+      color: #8a94a6;
+      cursor: pointer;
+    }
+
+    .nav-item svg {
+      width: 34px;
+      height: 34px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.9;
+    }
+
+    .nav-item span {
+      font-size: 0.95rem;
+      font-weight: 500;
+    }
+
+    .nav-item.active {
+      color: #2563eb;
+    }
+
+    .detail-backdrop {
+      position: absolute;
+      inset: 0;
+      z-index: 8;
+      background: rgba(17, 24, 39, 0.24);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 180ms ease;
+    }
+
+    .detail-backdrop.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .detail-sheet {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 9;
+      max-height: min(82vh, 760px);
+      padding: 14px 16px 120px;
+      overflow-y: auto;
+      border-radius: 34px 34px 0 0;
+      background: rgba(255, 255, 255, 0.98);
+      box-shadow: 0 -20px 48px rgba(15, 23, 42, 0.16);
+      transform: translateY(104%);
+      transition: transform 220ms ease;
+    }
+
+    .detail-sheet.open {
+      transform: translateY(0);
+    }
+
+    .sheet-handle {
+      width: 78px;
+      height: 8px;
+      margin: 0 auto 18px;
+      border-radius: 999px;
+      background: #d0d5dd;
+    }
+
+    .sheet-title {
+      margin: 0 0 10px;
+      font-size: 2.1rem;
+      font-weight: 700;
+      letter-spacing: -0.05em;
+    }
+
+    .sheet-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 12px 0;
+      color: #475467;
+      font-size: 1.1rem;
+    }
+
+    .sheet-row svg {
+      width: 28px;
+      height: 28px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+      flex: 0 0 auto;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin: 22px 0 26px;
+      padding: 12px 22px;
+      border-radius: 999px;
+      color: white;
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    .action-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      padding: 0 0 22px;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .action-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      min-height: 170px;
+      margin-top: 22px;
+      border-radius: 24px;
+      font-size: 1rem;
+      font-weight: 600;
+      text-align: center;
+      border: 0;
+      cursor: pointer;
+    }
+
+    .action-card svg {
+      width: 40px;
+      height: 40px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+    }
+
+    .action-card.log-visit {
+      background: #dfe7f5;
+      color: #2449a2;
+    }
+
+    .action-card.add-task {
+      background: #d9f0df;
+      color: #155b35;
+    }
+
+    .action-card.change-stage {
+      background: #efe7f6;
+      color: #5b21b6;
+    }
+
+    .detail-section {
+      padding: 26px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .detail-section:last-child {
+      border-bottom: 0;
+    }
+
+    .detail-section h2 {
+      margin: 0 0 22px;
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      gap: 18px 12px;
+      font-size: 1rem;
+    }
+
+    .summary-grid dt {
+      color: #475467;
+    }
+
+    .summary-grid dd {
+      margin: 0;
+      color: #1d2939;
+      font-weight: 500;
+    }
+
+    .summary-grid a {
+      color: #2563eb;
+      text-decoration: none;
+    }
+
+    .mini-card {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      padding: 18px;
+      border-radius: 20px;
+      background: #f7f8fa;
+      border: 1px solid #eef1f4;
+    }
+
+    .mini-card + .mini-card {
+      margin-top: 14px;
+    }
+
+    .mini-check {
+      width: 38px;
+      height: 38px;
+      border-radius: 14px;
+      border: 2px solid #8a8a8a;
+      flex: 0 0 auto;
+    }
+
+    .mini-task-icon {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      color: #667085;
+      flex: 0 0 auto;
+    }
+
+    .mini-task-icon svg {
+      width: 34px;
+      height: 34px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.9;
+    }
+
+    .mini-card h3 {
+      margin: 0 0 4px;
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    .mini-card p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .contact-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px;
+      border-radius: 20px;
+      background: #f7f8fa;
+      border: 1px solid #eef1f4;
+    }
+
+    .contact-card p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .contact-avatar {
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: #edf2f7;
+      color: #344054;
+      font-weight: 700;
+    }
+
+    .type-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: #f2f4f7;
+      color: #344054;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .type-chip svg {
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 2;
+    }
+
+    .task-form {
+      display: grid;
+      gap: 14px;
+      padding-top: 12px;
+    }
+
+    .task-form label {
+      display: grid;
+      gap: 7px;
+      color: #344054;
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+
+    .task-form input,
+    .task-form select,
+    .task-form textarea {
+      width: 100%;
+      padding: 13px 14px;
+      border: 1px solid #d0d5dd;
+      border-radius: 16px;
+      background: #fff;
+      color: #101828;
+    }
+
+    .task-form textarea {
+      min-height: 110px;
+      resize: vertical;
+    }
+
+    .task-form .readonly-field {
+      padding: 13px 14px;
+      border: 1px solid #e4e7ec;
+      border-radius: 16px;
+      background: #f8fafc;
+      color: #475467;
+      font-weight: 500;
+    }
+
+    .task-form-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    .task-form-actions button {
+      padding: 14px 16px;
+      border-radius: 16px;
+      border: 0;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .task-form-actions .secondary {
+      background: #eaecf0;
+      color: #344054;
+    }
+
+    .task-form-actions .primary {
+      background: #2563eb;
+      color: white;
+    }
+
+    .manager-only.hidden {
+      display: none !important;
+    }
+
+    .user-form,
+    .user-list {
+      display: grid;
+      gap: 16px;
+    }
+
+    .user-form {
+      margin-bottom: 28px;
+      padding: 20px;
+      border-radius: 24px;
+      background: rgba(255, 255, 255, 0.84);
+      box-shadow: 0 12px 26px rgba(15, 23, 42, 0.08);
+    }
+
+    .user-form label {
+      display: grid;
+      gap: 6px;
+      font-weight: 600;
+      color: #344054;
+    }
+
+    .user-form input,
+    .user-form select {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid #d0d5dd;
+      border-radius: 14px;
+    }
+
+    .user-submit {
+      padding: 13px 16px;
+      border: 0;
+      border-radius: 14px;
+      background: #2563eb;
+      color: white;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .user-card {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: center;
+      padding: 18px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.84);
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+    }
+
+    .user-card h3,
+    .user-card p {
+      margin: 0;
+    }
+
+    .user-card p {
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .user-role {
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: #eef2ff;
+      color: #3730a3;
+      font-weight: 700;
+      text-transform: capitalize;
+    }
+
+    .user-feedback {
+      min-height: 20px;
+      color: #b42318;
+      font-size: 0.95rem;
+    }
+
+    @media (max-width: 700px) {
+      .task-card h3 {
+        font-size: 1.2rem;
+      }
+
+      .action-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .summary-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .detail-sheet {
+        padding-bottom: 114px;
+      }
     }
   </style>
 </head>
 <body>
-  <div id="map"></div>
+  <section class="auth-shell" id="authShell">
+    <div class="auth-card">
+      <h1 id="authTitle">Sign In</h1>
+      <p id="authSubtitle">Access your organization’s shared CRM workspace.</p>
+      <form class="auth-form" id="authForm">
+        <label id="accountNameField" style="display:none;">
+          Organization Name
+          <input id="authAccountName" placeholder="Northwest Sales Group" />
+        </label>
+        <label id="fullNameField" style="display:none;">
+          Full Name
+          <input id="authFullName" placeholder="Shradha Shankar" />
+        </label>
+        <label>
+          Email
+          <input id="authEmail" type="email" placeholder="you@example.com" required />
+        </label>
+        <label>
+          Password
+          <input id="authPassword" type="password" placeholder="••••••••" required />
+        </label>
+        <div class="auth-actions">
+          <button class="primary" id="authSubmit" type="submit">Sign In</button>
+          <button class="secondary" id="authToggle" type="button">Create Organization</button>
+        </div>
+      </form>
+      <div class="auth-error" id="authError"></div>
+    </div>
+  </section>
 
-<script>
+  <div class="app-shell hidden" id="appShell">
+    <div class="topbar">
+      <div class="topbar-chip" id="userBadge">Signed in</div>
+      <button class="logout-button" id="logoutButton" type="button">Logout</button>
+    </div>
+    <section class="screen map-screen active" data-screen="map">
+      <button class="floating-button preview-button" type="button">Preview</button>
+      <button class="floating-button filter-button" type="button" aria-label="Filter">
+        <svg viewBox="0 0 24 24">
+          <path d="M4 5h16l-6.5 7.5v5.5l-3-1.8v-3.7z"></path>
+        </svg>
+      </button>
+      <div id="map"></div>
+    </section>
+
+    <section class="screen tasks-screen" data-screen="tasks">
+      <h1 class="section-title">Tasks</h1>
+      <p class="section-subtitle" id="taskCountLabel">0 tasks</p>
+      <div class="task-list" id="taskList"></div>
+    </section>
+
+    <section class="screen users-screen manager-only hidden" data-screen="users" id="usersScreen">
+      <h1 class="section-title">Users</h1>
+      <p class="section-subtitle">Manager-only access for creating salesperson and manager accounts.</p>
+      <form class="user-form" id="userForm">
+        <label>
+          Full Name
+          <input id="newUserName" placeholder="Sales Person" required />
+        </label>
+        <label>
+          Email
+          <input id="newUserEmail" type="email" placeholder="sales1@example.com" required />
+        </label>
+        <label>
+          Password
+          <input id="newUserPassword" type="password" placeholder="Temporary password" required />
+        </label>
+        <label>
+          Role
+          <select id="newUserRole">
+            <option value="salesperson">Salesperson</option>
+            <option value="manager">Manager</option>
+          </select>
+        </label>
+        <button class="user-submit" type="submit">Create User</button>
+        <div class="user-feedback" id="userFeedback"></div>
+      </form>
+      <div class="user-list" id="userList"></div>
+    </section>
+
+    <div class="detail-backdrop" id="detailBackdrop"></div>
+
+    <aside class="detail-sheet" id="detailSheet" aria-label="Lead details">
+      <div class="sheet-handle"></div>
+      <div id="detailContent"></div>
+    </aside>
+
+    <nav class="bottom-nav" aria-label="Primary">
+      <button class="nav-item active" type="button" data-target="map">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 21s7-5.8 7-11a7 7 0 1 0-14 0c0 5.2 7 11 7 11z"></path>
+          <circle cx="12" cy="10" r="2.7"></circle>
+        </svg>
+        <span>Map</span>
+      </button>
+      <button class="nav-item" type="button">
+        <svg viewBox="0 0 24 24">
+          <path d="M4 8l8-4 8 4-8 4z"></path>
+          <path d="M4 12l8 4 8-4"></path>
+          <path d="M4 16l8 4 8-4"></path>
+        </svg>
+        <span></span>
+      </button>
+      <button class="nav-item" type="button" data-target="tasks">
+        <svg viewBox="0 0 24 24">
+          <rect x="4" y="4" width="16" height="16" rx="2"></rect>
+          <path d="M8 12l3 3 5-6"></path>
+        </svg>
+        <span>Tasks</span>
+      </button>
+      <button class="nav-item manager-only hidden" type="button" data-target="users" id="usersNavButton">
+        <svg viewBox="0 0 24 24">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+          <circle cx="10" cy="7" r="4"></circle>
+          <path d="M20 8v6"></path>
+          <path d="M23 11h-6"></path>
+        </svg>
+        <span>Users</span>
+      </button>
+      <button class="nav-item" type="button">
+        <svg viewBox="0 0 24 24">
+          <path d="M8 3h8l5 5v13H3V3z"></path>
+          <path d="M16 3v5h5"></path>
+          <path d="M8 13h8"></path>
+          <path d="M8 17h6"></path>
+        </svg>
+        <span></span>
+      </button>
+    </nav>
+  </div>
+
+  <script>
     let map;
     let tempMarker = null;
-    let infoWindow;
+    let formWindow = null;
+    let markerInstances = [];
+    let leadsState = [];
+    let currentDetailLead = null;
+    let pendingLatLng = null;
+    let authMode = "login";
+    let authToken = localStorage.getItem("crmToken") || "";
+    let currentUser = null;
+    let googleMapsReady = false;
+    let appBootstrapped = false;
 
-    // Map status → Google default pin colors
-    function getMarkerIcon(status) {
-    const base = "http://maps.google.com/mapfiles/ms/icons/";
-
-    const statusColors = {
-        "New": "blue-dot.png",
-        "Attempted": "yellow-dot.png",
-        "Connected": "orange-dot.png",
-        "Active": "green-dot.png",
-        "Bad Timing": "purple-dot.png",
-        "Unqualified": "ltblue-dot.png",
-        "Disqualified": "red-dot.png",
-        "Client": "green-dot.png"
+    const STATUS_COLORS = {
+      New: "#3b82f6",
+      Attempted: "#f59e0b",
+      Connected: "#6b7280",
+      Active: "#10b981",
+      "Bad Timing": "#8b5cf6",
+      Unqualified: "#38bdf8",
+      Disqualified: "#ef4444",
+      Client: "#14b8a6"
     };
 
-    return base + (statusColors[status] || "blue-dot.png");
+    const TYPE_META = {
+      email: { label: "Email", icon: "email", emoji: "✉", colorClass: "email" },
+      call: { label: "Call", icon: "call", emoji: "☎", colorClass: "call" },
+      visit: { label: "Visit", icon: "visit", emoji: "◉", colorClass: "visit" },
+      meeting: { label: "Meeting", icon: "visit", emoji: "◎", colorClass: "meeting" },
+      none: { label: "No task set", icon: "location", emoji: "•", colorClass: "visit" }
+    };
+
+    const leadProfiles = {
+      "Innovate Co": {
+        address: "258 5th St",
+        owner: "Mike Johnson",
+        stage: "New lead from referral",
+        lastContact: "Never",
+        nextAction: "Add a first task",
+        contacts: [{ name: "Nina Patel", title: "Operations Lead" }]
+      },
+      "NextGen Labs": {
+        address: "900 Market St",
+        owner: "Ava Wilson",
+        stage: "Late-stage evaluation",
+        lastContact: "Last week",
+        nextAction: "Add a first task",
+        contacts: [{ name: "Mason Lee", title: "Head of Procurement" }]
+      },
+      "TechStart Inc": {
+        address: "410 Mission St",
+        owner: "Sophia Brown",
+        stage: "Needs pricing follow-up",
+        lastContact: "Yesterday",
+        nextAction: "Add a first task",
+        contacts: [{ name: "Priya Raman", title: "CEO" }]
+      },
+      "Acme Corp": {
+        address: "721 Howard St",
+        owner: "Jordan Kim",
+        stage: "Active expansion account",
+        lastContact: "Today",
+        nextAction: "Add a first task",
+        contacts: [{ name: "Alex Chen", title: "Facilities Director" }]
+      },
+      "Dynamic Group": {
+        address: "120 Spear St",
+        owner: "Jordan Kim",
+        stage: "Qualified opportunity",
+        lastContact: "Today",
+        nextAction: "Add a first task",
+        contacts: [{ name: "Sara Ibrahim", title: "Regional Manager" }]
+      },
+      "Global Solutions": {
+        address: "75 Beale St",
+        owner: "Emma Garcia",
+        stage: "Preparing product intro",
+        lastContact: "2 days ago",
+        nextAction: "Add a first task",
+        contacts: [{ name: "Owen Davis", title: "VP Sales" }]
+      }
+    };
+
+    const navItems = [...document.querySelectorAll(".nav-item[data-target]")];
+    const screens = [...document.querySelectorAll(".screen")];
+    const detailSheet = document.getElementById("detailSheet");
+    const detailBackdrop = document.getElementById("detailBackdrop");
+    const detailContent = document.getElementById("detailContent");
+    const taskList = document.getElementById("taskList");
+    const taskCountLabel = document.getElementById("taskCountLabel");
+    const authShell = document.getElementById("authShell");
+    const appShell = document.getElementById("appShell");
+    const authForm = document.getElementById("authForm");
+    const authTitle = document.getElementById("authTitle");
+    const authSubtitle = document.getElementById("authSubtitle");
+    const authSubmit = document.getElementById("authSubmit");
+    const authToggle = document.getElementById("authToggle");
+    const authError = document.getElementById("authError");
+    const accountNameField = document.getElementById("accountNameField");
+    const fullNameField = document.getElementById("fullNameField");
+    const userBadge = document.getElementById("userBadge");
+    const logoutButton = document.getElementById("logoutButton");
+    const userForm = document.getElementById("userForm");
+    const userList = document.getElementById("userList");
+    const userFeedback = document.getElementById("userFeedback");
+    const managerOnlyElements = [...document.querySelectorAll(".manager-only")];
+
+    async function apiFetch(url, options = {}) {
+      const headers = new Headers(options.headers || {});
+      if (authToken) {
+        headers.set("Authorization", `Bearer ${authToken}`);
+      }
+      return await fetch(url, { ...options, headers });
     }
 
-    async function initMap() {
-    map = new google.maps.Map(document.getElementById("map"), {
-        center: { lat: 47.61, lng: -122.33 },
-        zoom: 12
-    });
+    function setAuthMode(mode) {
+      authMode = mode;
+      const isRegister = mode === "register";
+      authTitle.textContent = isRegister ? "Create Organization" : "Sign In";
+      authSubtitle.textContent = isRegister
+        ? "Create the account and first manager user."
+        : "Access your organization’s shared CRM workspace.";
+      authSubmit.textContent = isRegister ? "Create Account" : "Sign In";
+      authToggle.textContent = isRegister ? "Back to Sign In" : "Create Organization";
+      accountNameField.style.display = isRegister ? "grid" : "none";
+      fullNameField.style.display = isRegister ? "grid" : "none";
+      authError.textContent = "";
+    }
 
-    infoWindow = new google.maps.InfoWindow();
+    function showAuth() {
+      authShell.classList.remove("hidden");
+      appShell.classList.add("hidden");
+    }
 
-    await loadLeads();
+    function showApp() {
+      authShell.classList.add("hidden");
+      appShell.classList.remove("hidden");
+    }
 
-    map.addListener("click", (e) => {
+    function applyRoleVisibility() {
+      const isManager = currentUser && currentUser.role === "manager";
+      managerOnlyElements.forEach((element) => {
+        element.classList.toggle("hidden", !isManager);
+      });
+      userBadge.textContent = currentUser
+        ? `${currentUser.fullName} · ${currentUser.role}`
+        : "Signed in";
+      if (!isManager && document.querySelector('.screen.active')?.dataset.screen === "users") {
+        switchScreen("map");
+      }
+    }
+
+    async function logout() {
+      authToken = "";
+      currentUser = null;
+      leadsState = [];
+      currentDetailLead = null;
+      appBootstrapped = false;
+      localStorage.removeItem("crmToken");
+      clearMarkers();
+      closeDetailSheet();
+      showAuth();
+    }
+
+    async function restoreSession() {
+      if (!authToken) {
+        showAuth();
+        return;
+      }
+
+      try {
+        const response = await apiFetch("/api/auth/me");
+        if (!response.ok) throw new Error("Session expired");
+        currentUser = await response.json();
+        applyRoleVisibility();
+        showApp();
+        await bootstrapApp();
+      } catch (error) {
+        authToken = "";
+        currentUser = null;
+        localStorage.removeItem("crmToken");
+        showAuth();
+      }
+    }
+
+    async function bootstrapApp() {
+      if (!googleMapsReady || !currentUser || appBootstrapped) return;
+      appBootstrapped = true;
+
+      map = new google.maps.Map(document.getElementById("map"), {
+        center: { lat: 37.7749, lng: -122.4194 },
+        zoom: 13,
+        disableDefaultUI: true,
+        styles: [
+          { featureType: "all", elementType: "labels.text.fill", stylers: [{ color: "#6b7280" }] },
+          { featureType: "poi", stylers: [{ visibility: "off" }] },
+          { featureType: "transit", stylers: [{ visibility: "off" }] },
+          { featureType: "road", elementType: "geometry", stylers: [{ color: "#e5e7eb" }] },
+          { featureType: "water", elementType: "geometry", stylers: [{ color: "#dbeafe" }] }
+        ]
+      });
+
+      map.addListener("click", (e) => {
+        closeDetailSheet();
         showLeadForm(e.latLng);
-    });
+      });
+
+      await loadLeads();
+      if (currentUser.role === "manager") {
+        await loadUsers();
+      }
+    }
+
+    async function loadUsers() {
+      if (!currentUser || currentUser.role !== "manager") return;
+
+      const response = await apiFetch("/api/users");
+      if (!response.ok) {
+        userList.innerHTML = "";
+        return;
+      }
+
+      const users = await response.json();
+      userList.innerHTML = users
+        .map(
+          (user) => `
+            <article class="user-card">
+              <div>
+                <h3>${escapeHtml(user.fullName)}</h3>
+                <p>${escapeHtml(user.email)}</p>
+              </div>
+              <div class="user-role">${escapeHtml(user.role)}</div>
+            </article>
+          `
+        )
+        .join("");
+    }
+
+    function iconSvg(name) {
+      const icons = {
+        location:
+          '<svg viewBox="0 0 24 24"><path d="M12 21s7-5.8 7-11a7 7 0 1 0-14 0c0 5.2 7 11 7 11z"></path><circle cx="12" cy="10" r="2.7"></circle></svg>',
+        user:
+          '<svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="10" cy="7" r="4"></circle></svg>',
+        calendar:
+          '<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M16 3v4"></path><path d="M8 3v4"></path><path d="M3 10h18"></path></svg>',
+        stage:
+          '<svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"></rect><path d="M8 12l3 3 5-6"></path></svg>',
+        email:
+          '<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M3 7l9 6 9-6"></path></svg>',
+        call:
+          '<svg viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.4 19.4 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.1 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.7.6 2.5a2 2 0 0 1-.5 2.1L8 9.9a16 16 0 0 0 6.1 6.1l1.6-1.2a2 2 0 0 1 2.1-.5c.8.3 1.6.5 2.5.6A2 2 0 0 1 22 16.9z"></path></svg>',
+        visit:
+          '<svg viewBox="0 0 24 24"><path d="M12 21s7-5.8 7-11a7 7 0 1 0-14 0c0 5.2 7 11 7 11z"></path></svg>'
+      };
+
+      return icons[name] || icons.location;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"']/g, (char) => {
+        return {
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;"
+        }[char];
+      });
+    }
+
+    function formatDueLabel(dueDate) {
+      if (!dueDate) return "No due date";
+
+      const selected = new Date(dueDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const selectedDay = new Date(selected);
+      selectedDay.setHours(0, 0, 0, 0);
+      const diffDays = Math.round((selectedDay - today) / 86400000);
+      const timeLabel = selected.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+
+      if (diffDays === 0) return `Today at ${timeLabel}`;
+      if (diffDays === 1) return `Tomorrow at ${timeLabel}`;
+      if (diffDays === -1) return `Overdue Yesterday at ${timeLabel}`;
+      if (diffDays < -1) return `Overdue ${Math.abs(diffDays)} days ago at ${timeLabel}`;
+
+      return `Due ${selected.toLocaleString([], { dateStyle: "medium", timeStyle: "short" })}`;
+    }
+
+    function normalizeTask(task) {
+      const dueDate = task.dueDate ? String(task.dueDate).slice(0, 10) : "";
+      const dueLabel = formatDueLabel(dueDate);
+
+      return {
+        ...task,
+        dueDate,
+        dueLabel,
+        dueState: dueLabel.startsWith("Overdue") ? "overdue" : "normal"
+      };
+    }
+
+    function getLeadMeta(lead) {
+      const profile = leadProfiles[lead.title] || {};
+      const tasks = (lead.tasks || []).map(normalizeTask);
+      const derivedType = tasks.length ? tasks[0].type : null;
+
+      return {
+        address: lead.address || profile.address || "San Francisco, CA",
+        owner: lead.owner || profile.owner || "Unassigned",
+        stage: profile.stage || "New lead",
+        lastContact: profile.lastContact || "Never",
+        nextAction: tasks.length ? tasks[0].title : profile.nextAction || "Add a first task",
+        type: derivedType || profile.type || null,
+        contacts:
+          lead.contacts && lead.contacts.length
+            ? lead.contacts
+            : profile.contacts || [{ name: "Primary Contact", title: "Not added yet" }],
+        tasks
+      };
+    }
+
+    function getStatusColor(status) {
+      return STATUS_COLORS[status] || STATUS_COLORS.New;
+    }
+
+    function createMarkerIcon(status, type) {
+      const fill = getStatusColor(status);
+      const symbol = (TYPE_META[type] || TYPE_META.none).emoji;
+      const svg = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="72" height="84" viewBox="0 0 72 84">
+          <filter id="shadow" x="-20%" y="-20%" width="160%" height="160%">
+            <feDropShadow dx="0" dy="7" stdDeviation="5" flood-color="#64748b" flood-opacity="0.24"/>
+          </filter>
+          <path filter="url(#shadow)" d="M36 80c0 0 23-18 23-39C59 22 48.7 10 36 10S13 22 13 41c0 21 23 39 23 39z" fill="${fill}" stroke="#ffffff" stroke-width="4" />
+          <circle cx="51" cy="22" r="14" fill="#f8fafc" stroke="#d7dce3" stroke-width="2"/>
+          <text x="51" y="27" text-anchor="middle" font-size="14" font-family="Arial, sans-serif" fill="#344054">${symbol}</text>
+        </svg>
+      `;
+
+      return {
+        url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(svg),
+        scaledSize: new google.maps.Size(54, 63),
+        anchor: new google.maps.Point(27, 60)
+      };
+    }
+
+    function formatTaskMeta(task) {
+      const type = TYPE_META[task.type] || TYPE_META.visit;
+      return { ...type, dueState: task.dueState || "normal" };
+    }
+
+    function switchScreen(target) {
+      screens.forEach((screen) => {
+        screen.classList.toggle("active", screen.dataset.screen === target);
+      });
+
+      navItems.forEach((item) => {
+        item.classList.toggle("active", item.dataset.target === target);
+      });
+    }
+
+    function closeDetailSheet() {
+      detailSheet.classList.remove("open");
+      detailBackdrop.classList.remove("open");
+    }
+
+    function clearMarkers() {
+      markerInstances.forEach((marker) => marker.setMap(null));
+      markerInstances = [];
+    }
+
+    function setLeadTasks(businessId, tasks) {
+      leadsState = leadsState.map((lead) => {
+        if (lead._id !== businessId) return lead;
+        return { ...lead, tasks };
+      });
+
+      if (currentDetailLead && currentDetailLead._id === businessId) {
+        currentDetailLead = leadsState.find((lead) => lead._id === businessId) || currentDetailLead;
+      }
+    }
+
+    function setLeadContacts(businessId, contacts) {
+      leadsState = leadsState.map((lead) => {
+        if (lead._id !== businessId) return lead;
+        return { ...lead, contacts };
+      });
+
+      if (currentDetailLead && currentDetailLead._id === businessId) {
+        currentDetailLead = leadsState.find((lead) => lead._id === businessId) || currentDetailLead;
+      }
+    }
+
+    async function fetchTasksForBusiness(businessId) {
+      const res = await apiFetch(`/api/businesses/${businessId}/tasks`);
+      if (!res.ok) throw new Error("Task fetch failed");
+      const tasks = await res.json();
+      return tasks.map(normalizeTask);
+    }
+
+    async function fetchContactsForBusiness(businessId) {
+      const res = await apiFetch(`/api/businesses/${businessId}/contacts`);
+      if (!res.ok) throw new Error("Contact fetch failed");
+      return await res.json();
+    }
+
+    function renderMarkers() {
+      clearMarkers();
+
+      leadsState.forEach((lead) => {
+        const marker = new google.maps.Marker({
+          position: { lat: lead.latitude, lng: lead.longitude },
+          map,
+          title: lead.title,
+          icon: createMarkerIcon(lead.status, getLeadMeta(lead).type)
+        });
+
+        marker.addListener("click", () => openDetailSheet(lead));
+        markerInstances.push(marker);
+      });
+    }
+
+    function getTaskRows() {
+      return leadsState.flatMap((lead) => {
+        const meta = getLeadMeta(lead);
+
+        return meta.tasks.map((task, index) => ({
+          id: task._id || `${lead._id || lead.title}-${index}`,
+          taskId: task._id || "",
+          businessId: lead._id,
+          company: lead.title,
+          title: task.title,
+          type: task.type || meta.type || "none",
+          dueLabel: task.dueLabel,
+          dueState: task.dueState || "normal",
+          status: task.status || "Open",
+          lead
+        }));
+      });
+    }
+
+    function renderTasks() {
+      const tasks = getTaskRows();
+      taskCountLabel.textContent = `${tasks.length} ${tasks.length === 1 ? "task" : "tasks"}`;
+
+      taskList.innerHTML = tasks
+        .map((task) => {
+          const type = formatTaskMeta(task);
+
+          return `
+            <article class="task-card ${task.dueState === "overdue" ? "overdue" : ""}" data-task-id="${escapeHtml(task.id)}">
+              <div class="task-icon ${type.colorClass}">${iconSvg(type.icon)}</div>
+              <div>
+                <h3>${escapeHtml(task.company)}</h3>
+                <p class="task-type">${escapeHtml(task.title)} · ${escapeHtml(type.label)}</p>
+                <p class="task-due ${task.dueState === "overdue" ? "overdue" : ""}">${escapeHtml(task.dueLabel)}</p>
+                <select class="task-status-select" data-task-status data-business-id="${escapeHtml(task.businessId || "")}" data-task-id="${escapeHtml(task.taskId || "")}">
+                  <option value="Open" ${task.status === "Open" ? "selected" : ""}>Open</option>
+                  <option value="In Progress" ${task.status === "In Progress" ? "selected" : ""}>In Progress</option>
+                  <option value="Completed" ${task.status === "Completed" ? "selected" : ""}>Completed</option>
+                </select>
+              </div>
+            </article>
+          `;
+        })
+        .join("");
+
+      [...taskList.querySelectorAll(".task-card")].forEach((card) => {
+        card.addEventListener("click", (event) => {
+          if (event.target.closest("[data-task-status]")) return;
+          const task = tasks.find((item) => item.id === card.dataset.taskId);
+          if (!task) return;
+          switchScreen("map");
+          openDetailSheet(task.lead);
+        });
+      });
+    }
+
+    function openDetailSheet(lead) {
+      const meta = getLeadMeta(lead);
+      currentDetailLead = lead;
+      const type = TYPE_META[meta.type] || TYPE_META.none;
+
+      const tasksMarkup = meta.tasks.length
+        ? meta.tasks
+            .map((task) => `
+              <div class="mini-card">
+                <div class="mini-check" aria-hidden="true"></div>
+                <div class="mini-task-icon">${iconSvg((TYPE_META[task.type] || TYPE_META.none).icon)}</div>
+                <div style="flex:1;">
+                  <h3>${escapeHtml(task.title)}</h3>
+                  <p>${escapeHtml(task.dueLabel)}</p>
+                  <select class="mini-task-status" data-task-status data-business-id="${escapeHtml(lead._id || "")}" data-task-id="${escapeHtml(task._id || "")}">
+                    <option value="Open" ${task.status === "Open" ? "selected" : ""}>Open</option>
+                    <option value="In Progress" ${task.status === "In Progress" ? "selected" : ""}>In Progress</option>
+                    <option value="Completed" ${task.status === "Completed" ? "selected" : ""}>Completed</option>
+                  </select>
+                </div>
+              </div>
+            `)
+            .join("")
+        : `
+            <div class="mini-card">
+              <div class="mini-task-icon">${iconSvg("calendar")}</div>
+              <div>
+                <h3>No task yet</h3>
+                <p>Add a task to track the first interaction and due date.</p>
+              </div>
+            </div>
+          `;
+
+      const contactsMarkup = meta.contacts.length
+        ? meta.contacts
+            .map((contact) => {
+              const initials = contact.name
+                .split(" ")
+                .map((part) => part[0])
+                .slice(0, 2)
+                .join("")
+                .toUpperCase();
+
+              return `
+                <div class="contact-card">
+                  <div>
+                    <h3>${escapeHtml(contact.name)}</h3>
+                    <p>${escapeHtml(contact.title || "")}</p>
+                    <p>${escapeHtml(contact.email || "")} ${contact.phone ? "· " + escapeHtml(contact.phone) : ""}</p>
+                  </div>
+                  <div class="contact-avatar">${escapeHtml(initials)}</div>
+                </div>
+              `;
+            })
+            .join("")
+        : `
+            <div class="mini-card">
+              <div class="mini-task-icon">${iconSvg("user")}</div>
+              <div>
+                <h3>No contacts yet</h3>
+                <p>Add a contact for this business.</p>
+              </div>
+            </div>
+          `;
+
+      detailContent.innerHTML = `
+        <h1 class="sheet-title">${escapeHtml(lead.title)}</h1>
+        <div class="sheet-row">
+          ${iconSvg("location")}
+          <span>${escapeHtml(meta.address)}</span>
+        </div>
+        <div class="sheet-row">
+          ${iconSvg("user")}
+          <span>Owner: ${escapeHtml(meta.owner)}</span>
+        </div>
+        <div class="sheet-row">
+          <span class="type-chip">
+            ${iconSvg(type.icon)}
+            ${escapeHtml(type.label)}
+          </span>
+        </div>
+        <div class="status-pill" style="background:${getStatusColor(lead.status)}">${escapeHtml(lead.status || "New")}</div>
+
+        <div class="action-grid">
+          <button class="action-card log-visit" type="button">
+            ${iconSvg("location")}
+            <span>Log Visit</span>
+          </button>
+          <button class="action-card add-task" type="button" data-action="add-task">
+            ${iconSvg("calendar")}
+            <span>Add Task</span>
+          </button>
+          <button class="action-card change-stage" type="button" data-action="edit-business">
+            ${iconSvg("stage")}
+            <span>Edit Business</span>
+          </button>
+        </div>
+
+        <section class="detail-section">
+          <h2>Deal Summary</h2>
+          <dl class="summary-grid">
+            <dt>Stage:</dt>
+            <dd>${escapeHtml(meta.stage)}</dd>
+            <dt>Last contact:</dt>
+            <dd>${escapeHtml(meta.lastContact)}</dd>
+            <dt>Next action:</dt>
+            <dd><a href="#" onclick="return false;">${escapeHtml(meta.nextAction)}</a></dd>
+            <dt>Task type:</dt>
+            <dd>${escapeHtml(type.label)}</dd>
+          </dl>
+        </section>
+
+        <section class="detail-section">
+          <h2>Tasks</h2>
+          ${tasksMarkup}
+        </section>
+
+        <section class="detail-section">
+          <h2>Contacts</h2>
+          ${contactsMarkup}
+          <div style="margin-top:16px;">
+            <button class="user-submit" type="button" data-action="add-contact">Add Contact</button>
+          </div>
+        </section>
+      `;
+
+      detailBackdrop.classList.add("open");
+      detailSheet.classList.add("open");
+    }
+
+    function openTaskForm(lead) {
+      currentDetailLead = lead;
+      const meta = getLeadMeta(lead);
+
+      detailContent.innerHTML = `
+        <h1 class="sheet-title">Add Task</h1>
+        <div class="sheet-row">
+          ${iconSvg("location")}
+          <span>${escapeHtml(lead.title)}</span>
+        </div>
+        <form class="task-form" id="taskForm">
+          <label>
+            Task Title
+            <input id="taskTitle" name="taskTitle" required placeholder="Follow-up email" />
+          </label>
+          <label>
+            Task Type
+            <select id="taskType" name="taskType" required>
+              <option value="visit">Visit</option>
+              <option value="call">Call</option>
+              <option value="email">Email</option>
+              <option value="meeting">Meeting</option>
+            </select>
+          </label>
+          <label>
+            Due Date / Timeline
+            <input id="taskDueDate" name="taskDueDate" type="datetime-local" required />
+          </label>
+          <label>
+            Business ID
+            <div class="readonly-field">${escapeHtml(lead._id || lead.title)}</div>
+          </label>
+          <label>
+            Assigned User
+            <input id="taskAssignedUser" name="taskAssignedUser" placeholder="${escapeHtml(meta.owner)}" />
+          </label>
+          <label>
+            Description or Notes
+            <textarea id="taskNotes" name="taskNotes" placeholder="Add context for the task"></textarea>
+          </label>
+          <label>
+            Status
+            <select id="taskStatus" name="taskStatus">
+              <option value="Open" selected>Open</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Completed">Completed</option>
+            </select>
+          </label>
+          <div class="task-form-actions">
+            <button class="secondary" type="button" data-action="cancel-task">Cancel</button>
+            <button class="primary" type="submit">Save Task</button>
+          </div>
+        </form>
+      `;
+    }
+
+    function openBusinessForm(lead) {
+      detailContent.innerHTML = `
+        <h1 class="sheet-title">Edit Business</h1>
+        <form class="task-form" id="businessForm">
+          <label>
+            Business Name
+            <input id="businessTitle" value="${escapeHtml(lead.title)}" required />
+          </label>
+          <label>
+            Address
+            <input id="businessAddress" value="${escapeHtml(lead.address || "")}" />
+          </label>
+          <label>
+            Notes
+            <textarea id="businessNotes">${escapeHtml(lead.notes || "")}</textarea>
+          </label>
+          <label>
+            Status
+            <select id="businessStatus">
+              <option value="New" ${lead.status === "New" ? "selected" : ""}>New</option>
+              <option value="Attempted" ${lead.status === "Attempted" ? "selected" : ""}>Attempted</option>
+              <option value="Connected" ${lead.status === "Connected" ? "selected" : ""}>Connected</option>
+              <option value="Active" ${lead.status === "Active" ? "selected" : ""}>Active</option>
+              <option value="Bad Timing" ${lead.status === "Bad Timing" ? "selected" : ""}>Bad Timing</option>
+              <option value="Unqualified" ${lead.status === "Unqualified" ? "selected" : ""}>Unqualified</option>
+              <option value="Disqualified" ${lead.status === "Disqualified" ? "selected" : ""}>Disqualified</option>
+              <option value="Client" ${lead.status === "Client" ? "selected" : ""}>Client</option>
+            </select>
+          </label>
+          <div class="task-form-actions">
+            <button class="secondary" type="button" data-action="cancel-business">Cancel</button>
+            <button class="primary" type="submit">Save Business</button>
+          </div>
+        </form>
+      `;
+    }
+
+    function openContactForm(lead) {
+      detailContent.innerHTML = `
+        <h1 class="sheet-title">Add Contact</h1>
+        <div class="sheet-row">
+          ${iconSvg("location")}
+          <span>${escapeHtml(lead.title)}</span>
+        </div>
+        <form class="task-form" id="contactForm">
+          <label>
+            Name
+            <input id="contactName" required placeholder="Nina Patel" />
+          </label>
+          <label>
+            Title
+            <input id="contactTitle" placeholder="Operations Lead" />
+          </label>
+          <label>
+            Email
+            <input id="contactEmail" type="email" placeholder="nina@example.com" />
+          </label>
+          <label>
+            Phone
+            <input id="contactPhone" placeholder="(206) 555-1234" />
+          </label>
+          <div class="task-form-actions">
+            <button class="secondary" type="button" data-action="cancel-contact">Cancel</button>
+            <button class="primary" type="submit">Save Contact</button>
+          </div>
+        </form>
+      `;
     }
 
     async function loadLeads() {
-    const res = await fetch("/api/leads");
-    const leads = await res.json();
+      try {
+        let res = await apiFetch("/api/businesses");
+        let businesses;
 
-    leads.forEach(addLeadMarker);
-    }
+        if (res.ok) {
+          businesses = await res.json();
+        } else if (res.status === 404) {
+          res = await apiFetch("/api/leads");
+          if (!res.ok) throw new Error("Lead fetch failed");
+          businesses = await res.json();
+        } else {
+          throw new Error("Business fetch failed");
+        }
 
-    function addLeadMarker(lead) {
-    const marker = new google.maps.Marker({
-        position: { lat: lead.latitude, lng: lead.longitude },
-        map,
-        title: lead.title,
-        icon: getMarkerIcon(lead.status)
-    });
+        const leadsWithTasks = await Promise.all(
+          businesses.map(async (business) => {
+            try {
+              const [tasks, contacts] = await Promise.all([
+                fetchTasksForBusiness(business._id),
+                fetchContactsForBusiness(business._id)
+              ]);
+              return { ...business, tasks, contacts };
+            } catch (error) {
+              return { ...business, tasks: [], contacts: [] };
+            }
+          })
+        );
 
-    marker.addListener("click", () => {
-        const content = `
-        <div>
-            <h3>${lead.title}</h3>
-            <p><strong>Status:</strong> ${lead.status}</p>
-            <p>${lead.notes || ""}</p>
-        </div>
-        `;
+        leadsState = leadsWithTasks;
+      } catch (error) {
+        leadsState = [];
+      }
 
-        infoWindow.setContent(content);
-        infoWindow.open(map, marker);
-    });
+      renderMarkers();
+      renderTasks();
     }
 
     function showLeadForm(latLng) {
-    if (tempMarker) tempMarker.setMap(null);
+      if (tempMarker) tempMarker.setMap(null);
+      if (formWindow) formWindow.close();
+      pendingLatLng = latLng;
 
-    tempMarker = new google.maps.Marker({
+      tempMarker = new google.maps.Marker({
         position: latLng,
         map
-    });
+      });
 
-    const formHtml = `
-        <div>
-        <input id="leadTitle" placeholder="Lead Name" /><br/>
-        <textarea id="leadNotes" placeholder="Notes"></textarea><br/>
-        <select id="leadStatus">
+      const formHtml = `
+        <div id="leadFormContainer" style="min-width:230px;padding:4px 2px 2px;">
+          <input id="leadTitle" placeholder="Lead Name" style="width:100%;margin-bottom:8px;padding:8px;" />
+          <input id="leadAddress" placeholder="Address" style="width:100%;margin-bottom:8px;padding:8px;" />
+          <textarea id="leadNotes" placeholder="Notes" style="width:100%;margin-bottom:8px;padding:8px;"></textarea>
+          <select id="leadStatus" style="width:100%;margin-bottom:8px;padding:8px;">
             <option value="New">New</option>
             <option value="Attempted">Attempted</option>
             <option value="Connected">Connected</option>
@@ -100,42 +1728,335 @@
             <option value="Unqualified">Unqualified</option>
             <option value="Disqualified">Disqualified</option>
             <option value="Client">Client</option>
-        </select><br/>
-        <button onclick="saveLead(${latLng.lat()}, ${latLng.lng()})">Save</button>
+          </select>
+          <button id="leadSaveButton" type="button" style="width:100%;padding:10px;border:0;border-radius:10px;background:#2563eb;color:white;">Save</button>
         </div>
-    `;
+      `;
 
-    const formWindow = new google.maps.InfoWindow({
-        content: formHtml
-    });
+      formWindow = new google.maps.InfoWindow({ content: formHtml });
+      formWindow.open(map, tempMarker);
 
-    formWindow.open(map, tempMarker);
+      google.maps.event.addListenerOnce(formWindow, "domready", () => {
+        const container = document.getElementById("leadFormContainer");
+        const saveButton = document.getElementById("leadSaveButton");
+        if (!container || !saveButton) return;
+
+        google.maps.OverlayView.preventMapHitsAndGesturesFrom(container);
+        container.addEventListener("click", (event) => event.stopPropagation());
+        saveButton.addEventListener("click", async (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          if (!pendingLatLng) return;
+          await saveLead(pendingLatLng.lat(), pendingLatLng.lng());
+        });
+      });
     }
 
     async function saveLead(lat, lng) {
-    const title = document.getElementById("leadTitle").value;
-    const notes = document.getElementById("leadNotes").value;
-    const status = document.getElementById("leadStatus").value;
+      const title = document.getElementById("leadTitle").value.trim();
+      const notes = document.getElementById("leadNotes").value.trim();
+      const status = document.getElementById("leadStatus").value;
+      const address = document.getElementById("leadAddress").value.trim();
 
-    const res = await fetch("/api/leads", {
+      if (!title) return;
+
+      let res = await apiFetch("/api/businesses", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-        title,
-        notes,
-        status,
-        latitude: lat,
-        longitude: lng
+          title,
+          address,
+          notes,
+          status,
+          latitude: lat,
+          longitude: lng
         })
+      });
+
+      if (res.status === 404) {
+        res = await apiFetch("/api/leads", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title,
+            notes,
+            status,
+            latitude: lat,
+            longitude: lng
+          })
+        });
+      }
+
+      if (!res.ok) {
+        alert("Saving the pin failed. If you just changed the backend, restart the server and try again.");
+        return;
+      }
+
+      const lead = await res.json();
+      const createdLead = { ...lead, tasks: [], contacts: [] };
+      leadsState = [createdLead, ...leadsState];
+
+      leadProfiles[lead.title] = {
+        ...(leadProfiles[lead.title] || {}),
+        address: address || lead.address || "San Francisco, CA",
+        owner: lead.owner || currentUser.fullName || "Unassigned",
+        stage: "New lead",
+        lastContact: "Never",
+        nextAction: "Add a first task",
+        contacts: [{ name: lead.owner || "Primary Contact", title: "New contact" }]
+      };
+
+      renderMarkers();
+      renderTasks();
+
+      if (tempMarker) tempMarker.setMap(null);
+      if (formWindow) formWindow.close();
+      pendingLatLng = null;
+      openDetailSheet(createdLead);
+    }
+
+    async function updateTaskStatus(businessId, taskId, status) {
+      if (!businessId || !taskId) return;
+
+      const response = await apiFetch(`/api/businesses/${businessId}/tasks/${taskId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status })
+      });
+
+      if (!response.ok) return;
+
+      const updatedTask = normalizeTask(await response.json());
+      const lead = leadsState.find((item) => item._id === businessId);
+      if (!lead) return;
+
+      const updatedTasks = (lead.tasks || []).map((task) =>
+        task._id === updatedTask._id ? updatedTask : task
+      );
+
+      setLeadTasks(businessId, updatedTasks);
+      renderMarkers();
+      renderTasks();
+
+      if (currentDetailLead && currentDetailLead._id === businessId) {
+        openDetailSheet(leadsState.find((item) => item._id === businessId) || currentDetailLead);
+      }
+    }
+
+    async function initMap() {
+      googleMapsReady = true;
+      await bootstrapApp();
+    }
+
+    navItems.forEach((item) => {
+      item.addEventListener("click", () => {
+        switchScreen(item.dataset.target);
+        if (item.dataset.target !== "map") closeDetailSheet();
+      });
     });
 
-    const lead = await res.json();
+    detailContent.addEventListener("click", (event) => {
+      const target = event.target.closest("[data-action]");
+      if (!target || !currentDetailLead) return;
 
-    addLeadMarker(lead);
+      if (target.dataset.action === "add-task") {
+        openTaskForm(currentDetailLead);
+      }
 
-    tempMarker.setMap(null);
-    }
-</script>
+      if (target.dataset.action === "edit-business") {
+        openBusinessForm(currentDetailLead);
+      }
+
+      if (target.dataset.action === "add-contact") {
+        openContactForm(currentDetailLead);
+      }
+
+      if (target.dataset.action === "cancel-task") {
+        openDetailSheet(currentDetailLead);
+      }
+
+      if (target.dataset.action === "cancel-business") {
+        openDetailSheet(currentDetailLead);
+      }
+
+      if (target.dataset.action === "cancel-contact") {
+        openDetailSheet(currentDetailLead);
+      }
+    });
+
+    detailContent.addEventListener("submit", async (event) => {
+      if (!currentDetailLead) return;
+      event.preventDefault();
+
+      if (event.target.id === "taskForm") {
+        const taskTitle = document.getElementById("taskTitle").value.trim();
+        const taskType = document.getElementById("taskType").value;
+        const taskDueDate = document.getElementById("taskDueDate").value;
+        const taskAssignedUser = document.getElementById("taskAssignedUser").value.trim();
+        const taskNotes = document.getElementById("taskNotes").value.trim();
+        const taskStatus = document.getElementById("taskStatus").value;
+
+        if (!taskTitle || !taskDueDate || !currentDetailLead._id) return;
+
+        const response = await apiFetch(`/api/businesses/${currentDetailLead._id}/tasks`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: taskTitle,
+            type: taskType,
+            dueDate: taskDueDate,
+            assignedUser: taskAssignedUser || getLeadMeta(currentDetailLead).owner || "",
+            description: taskNotes,
+            status: taskStatus
+          })
+        });
+
+        if (!response.ok) return;
+
+        const createdTask = normalizeTask(await response.json());
+        const updatedTasks = [createdTask, ...(currentDetailLead.tasks || [])];
+        setLeadTasks(currentDetailLead._id, updatedTasks);
+        renderMarkers();
+        renderTasks();
+        openDetailSheet(leadsState.find((lead) => lead._id === currentDetailLead._id) || currentDetailLead);
+      }
+
+      if (event.target.id === "businessForm") {
+        const response = await apiFetch(`/api/businesses/${currentDetailLead._id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: document.getElementById("businessTitle").value.trim(),
+            address: document.getElementById("businessAddress").value.trim(),
+            notes: document.getElementById("businessNotes").value.trim(),
+            status: document.getElementById("businessStatus").value
+          })
+        });
+
+        if (!response.ok) return;
+
+        const updatedLead = await response.json();
+        leadsState = leadsState.map((lead) =>
+          lead._id === updatedLead._id
+            ? { ...lead, ...updatedLead, tasks: lead.tasks || [], contacts: lead.contacts || [] }
+            : lead
+        );
+        currentDetailLead = leadsState.find((lead) => lead._id === updatedLead._id) || updatedLead;
+        renderMarkers();
+        openDetailSheet(currentDetailLead);
+      }
+
+      if (event.target.id === "contactForm") {
+        const response = await apiFetch(`/api/businesses/${currentDetailLead._id}/contacts`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: document.getElementById("contactName").value.trim(),
+            title: document.getElementById("contactTitle").value.trim(),
+            email: document.getElementById("contactEmail").value.trim(),
+            phone: document.getElementById("contactPhone").value.trim()
+          })
+        });
+
+        if (!response.ok) return;
+
+        const createdContact = await response.json();
+        const updatedContacts = [createdContact, ...(currentDetailLead.contacts || [])];
+        setLeadContacts(currentDetailLead._id, updatedContacts);
+        openDetailSheet(leadsState.find((lead) => lead._id === currentDetailLead._id) || currentDetailLead);
+      }
+    });
+
+    taskList.addEventListener("change", async (event) => {
+      const select = event.target.closest("[data-task-status]");
+      if (!select) return;
+      await updateTaskStatus(select.dataset.businessId, select.dataset.taskId, select.value);
+    });
+
+    detailContent.addEventListener("change", async (event) => {
+      const select = event.target.closest("[data-task-status]");
+      if (!select) return;
+      await updateTaskStatus(select.dataset.businessId, select.dataset.taskId, select.value);
+    });
+
+    detailBackdrop.addEventListener("click", closeDetailSheet);
+    authToggle.addEventListener("click", () => {
+      setAuthMode(authMode === "login" ? "register" : "login");
+    });
+
+    logoutButton.addEventListener("click", logout);
+
+    userForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      userFeedback.textContent = "";
+      if (!currentUser || currentUser.role !== "manager") return;
+
+      const response = await apiFetch("/api/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fullName: document.getElementById("newUserName").value.trim(),
+          email: document.getElementById("newUserEmail").value.trim(),
+          password: document.getElementById("newUserPassword").value.trim(),
+          role: document.getElementById("newUserRole").value
+        })
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        userFeedback.textContent = data.error || "Failed to create user";
+        return;
+      }
+
+      userForm.reset();
+      userFeedback.textContent = "User created.";
+      await loadUsers();
+    });
+
+    authForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      authError.textContent = "";
+
+      const email = document.getElementById("authEmail").value.trim();
+      const password = document.getElementById("authPassword").value.trim();
+      const accountName = document.getElementById("authAccountName").value.trim();
+      const fullName = document.getElementById("authFullName").value.trim();
+
+      const endpoint = authMode === "register" ? "/api/auth/register" : "/api/auth/login";
+      const payload =
+        authMode === "register"
+          ? { accountName, fullName, email, password }
+          : { email, password };
+
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        authError.textContent = data.error || "Authentication failed";
+        return;
+      }
+
+      authToken = data.token;
+      currentUser = data.user;
+      localStorage.setItem("crmToken", authToken);
+      applyRoleVisibility();
+      showApp();
+      await bootstrapApp();
+      await loadLeads();
+      if (currentUser.role === "manager") {
+        await loadUsers();
+      }
+    });
+
+    window.saveLead = saveLead;
+    window.initMap = initMap;
+    setAuthMode("login");
+    restoreSession();
+  </script>
 
   <script
     src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAHL7a_yVvv72sZmSzPaoSzWv06T6SqoC8&callback=initMap"

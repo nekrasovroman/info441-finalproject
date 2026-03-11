@@ -1,12 +1,19 @@
 import express from "express";
 import Lead from "../models/Lead.js";
+import { requireAuth } from "../middleware/auth.js";
 
 const router = express.Router();
+
+router.use(requireAuth);
 
 // GET all leads
 router.get("/", async (req, res) => {
   try {
-    const leads = await Lead.find().sort({ createdAt: -1 });
+    const query =
+      req.user.role === "manager"
+        ? { accountId: req.user.accountId }
+        : { accountId: req.user.accountId, ownerUserId: req.user.userId };
+    const leads = await Lead.find(query).sort({ createdAt: -1 });
     res.json(leads);
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch leads" });
@@ -16,10 +23,14 @@ router.get("/", async (req, res) => {
 // CREATE lead
 router.post("/", async (req, res) => {
   try {
-    const { title, notes, status, latitude, longitude } = req.body;
+    const { title, address, owner, notes, status, latitude, longitude } = req.body;
 
     const newLead = await Lead.create({
+      accountId: req.user.accountId,
+      ownerUserId: req.user.userId,
       title,
+      address,
+      owner: owner || req.user.fullName,
       notes,
       status,
       latitude,
